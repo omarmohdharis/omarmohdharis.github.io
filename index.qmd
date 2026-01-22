@@ -5,3 +5,5 @@ title: "Omar Mohd Haris"
 This is a Quarto website.
 
 To learn more about Quarto websites visit <https://quarto.org/docs/websites>.
+
+![./images/images/image_processing20220715-4-a761zp.jpg]{width="75%" fig-align="center"}
