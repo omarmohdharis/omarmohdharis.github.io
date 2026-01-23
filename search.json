@@ -9,15 +9,8 @@
   {
     "objectID": "index.html",
     "href": "index.html",
-    "title": "Omar Mohd Haris",
+    "title": "Python Dataset Demo",
     "section": "",
-    "text": "import pandas as pd\ndata = { “tool”: [“EC2”, “Quarto”, “GitHub Pages”], “purpose”: [“Cloud VM”, “Publishing”, “Hosting”], “version”: [“Ubuntu 24.04”, “1.8.24”, “Pages”] }\ndf = pd.DataFrame(data) df"
-  },
-  {
-    "objectID": "index.html#python-dataset-demo",
-    "href": "index.html#python-dataset-demo",
-    "title": "Omar Mohd Haris",
-    "section": "",
-    "text": "import pandas as pd\ndata = { “tool”: [“EC2”, “Quarto”, “GitHub Pages”], “purpose”: [“Cloud VM”, “Publishing”, “Hosting”], “version”: [“Ubuntu 24.04”, “1.8.24”, “Pages”] }\ndf = pd.DataFrame(data) df"
+    "text": "import pandas as pd\n\ndata = {\n    \"tool\": [\"EC2\", \"Quarto\", \"GitHub Pages\"],\n    \"purpose\": [\"Cloud VM\", \"Publishing\", \"Hosting\"],\n    \"version\": [\"Ubuntu 24.04\", \"1.8.24\", \"Pages\"]\n}\n\ndf = pd.DataFrame(data)\ndf\n\n\n\n\n\n\n\n\ntool\npurpose\nversion\n\n\n\n\n0\nEC2\nCloud VM\nUbuntu 24.04\n\n\n1\nQuarto\nPublishing\n1.8.24\n\n\n2\nGitHub Pages\nHosting\nPages"
   }
 ]
