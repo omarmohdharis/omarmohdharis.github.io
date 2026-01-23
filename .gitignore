@@ -1,3 +1,5 @@
 /.quarto/
 .venv/*
 quarto-*.tar.gz
+
+**/*.quarto_ipynb
