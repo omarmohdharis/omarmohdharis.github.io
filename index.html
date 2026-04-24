@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="day">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Omar Mohd Haris — Portfolio</title>
+  <meta name="description" content="Applied business analytics, data, and a little bit of 3D. A portfolio by Omar Mohd Haris." />
+  <link rel="stylesheet" href="css/style.css" />
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+    }
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Loader -->
+  <div class="loader" id="loader">
+    <div class="word">setting the scene…</div>
+    <div class="bar"></div>
+  </div>
+
+  <!-- Nav -->
+  <nav class="nav">
+    <a href="index.html" class="brand">Omar M.H.</a>
+    <ul>
+      <li><a href="index.html">Index</a></li>
+      <li><a href="about.html">About</a></li>
+      <li><a href="projects.html">Projects</a></li>
+      <li><a href="resume.html">Resume</a></li>
+      <li><a href="contact.html">Contact</a></li>
+    </ul>
+  </nav>
+
+  <!-- 3D scene -->
+  <div class="scene-wrap">
+    <canvas id="scene-canvas"></canvas>
+  </div>
+  <div class="scene-tooltip" id="scene-tooltip">Projects</div>
+
+  <!-- Hero overlay -->
+  <div class="hero-overlay">
+    <div>
+      <div class="fade-in d1" style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.2em; color: var(--ink-mute); margin-bottom: 1.5rem;">
+        ⌂ — Boston, MA — Portfolio '26
+      </div>
+      <h1 class="hero-title fade-in d2">
+        A little<br/><em>studio</em><br/>of my work.
+      </h1>
+      <p class="hero-subtitle fade-in d3">
+        Hi, I'm Omar — a business analytics student at Boston University. Drag to rotate. Click the lamp to go cozy. Click anything else to explore.
+      </p>
+    </div>
+    <div class="hero-hint fade-in d4">
+      <span class="dot"></span>
+      Drag · Hover · Click
+    </div>
+  </div>
+
+  <!-- Theme toggle -->
+  <button id="theme-toggle" class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">☀</button>
+
+  <script src="js/nav.js"></script>
+  <script type="module" src="js/scene.js"></script>
+  <script>
+    // Keep the toggle button icon in sync with scene changes
+    const obs = new MutationObserver(() => {
+      const btn = document.getElementById('theme-toggle');
+      const t = document.documentElement.getAttribute('data-theme');
+      if (btn) btn.textContent = t === 'night' ? '☾' : '☀';
+    });
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  </script>
+</body>
+</html>
