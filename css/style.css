@@ -643,10 +643,14 @@ code, pre, .mono {
     letter-spacing: 0.18em;
   }
 
-  body {
-    min-height: 100vh;
-    overflow-y: hidden;
-  }
+body {
+  min-height: 100vh;
+}
+
+/* Lock scroll only on the homepage (where the 3D scene lives) */
+body.is-home {
+  overflow-y: hidden;
+}
 
   .theme-toggle {
     bottom: 1rem;
@@ -690,21 +694,21 @@ code, pre, .mono {
 }
 
 @media (max-height: 500px) and (orientation: landscape) {
-  .scene-wrap {
+  body.is-home .scene-wrap {
     top: 0;
     height: 100vh;
   }
-  .hero-overlay {
+  body.is-home .hero-overlay {
     position: fixed;
     height: auto;
     padding: 4.5rem 1.5rem 1rem;
     pointer-events: none;
     background: linear-gradient(to bottom, var(--bg) 0%, transparent 100%);
   }
-  .hero-title {
+  body.is-home .hero-title {
     font-size: 2rem;
   }
-  .hero-subtitle {
+  body.is-home .hero-subtitle {
     display: none;
   }
 }
