@@ -550,8 +550,9 @@ const tooltip = document.getElementById('scene-tooltip');
 let hovered = null;
 
 function onPointerMove(e) {
-  pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
-  pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
+  const rect = canvas.getBoundingClientRect();
+  pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
   raycaster.setFromCamera(pointer, camera);
   const intersects = raycaster.intersectObjects(clickables, true);
 
@@ -650,12 +651,48 @@ window.toggleTheme = toggleTheme; // expose for the button
 scene.background = new THREE.Color(THEMES[currentTheme].bg);
 applyTheme(currentTheme, true);
 
-// -------- Resize --------
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
+// -------- Responsive viewport & camera --------
+function getViewport() {
+  const isMobile = window.innerWidth <= 768;
+  const isLandscapeShort = window.innerHeight <= 500 && window.innerWidth > window.innerHeight;
+
+  if (isMobile && !isLandscapeShort) {
+    return {
+      width: window.innerWidth,
+      height: window.innerHeight * 0.5,
+      mobile: true,
+    };
+  }
+  return {
+    width: window.innerWidth,
+    height: window.innerHeight,
+    mobile: false,
+  };
+}
+
+function applyResponsiveCamera() {
+  const v = getViewport();
+
+  if (v.mobile) {
+    camera.fov = 42;
+    camera.position.set(5.2, 4.2, 6);
+    controls.target.set(0, 1.4, 0);
+  } else {
+    camera.fov = 35;
+    camera.position.set(6, 5, 7);
+    controls.target.set(0, 1.2, 0);
+  }
+
+  camera.aspect = v.width / v.height;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(v.width, v.height);
+}
+
+window.addEventListener('resize', applyResponsiveCamera);
+window.addEventListener('orientationchange', () => {
+  setTimeout(applyResponsiveCamera, 200);
 });
+applyResponsiveCamera();
 
 // -------- Animate --------
 function animate() {
