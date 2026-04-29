@@ -1,6 +1,7 @@
 /* =====================================================
    Cozy Desk Scene — Three.js
-   Inspired by bokoko33 room aesthetic
+   Japanese box lamp · About card · Steam mug
+   With bokoko-style intro animation + orbit constraints
    ===================================================== */
 
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
@@ -11,9 +12,8 @@ const canvas = document.getElementById('scene-canvas');
 const scene = new THREE.Scene();
 
 const camera = new THREE.PerspectiveCamera(
-  35, window.innerWidth / window.innerHeight, 0.1, 100
+  40, window.innerWidth / window.innerHeight, 0.1, 100
 );
-camera.position.set(6, 5, 7);
 
 const renderer = new THREE.WebGLRenderer({
   canvas, antialias: true, alpha: true
@@ -24,20 +24,36 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 
-// Orbit controls — drag to rotate, no zoom (keep framing controlled)
+// -------- Orbit controls (constrained, bokoko-style) --------
 const controls = new OrbitControls(camera, canvas);
 controls.enableDamping = true;
 controls.dampingFactor = 0.08;
 controls.enablePan = false;
 controls.enableZoom = false;
-controls.minPolarAngle = Math.PI / 6;
-controls.maxPolarAngle = Math.PI / 2.2;
-controls.autoRotate = true;
-controls.autoRotateSpeed = 0.3;
-controls.target.set(0, 1.2, 0);
 
-// Stop auto-rotate once the user interacts
-canvas.addEventListener('pointerdown', () => { controls.autoRotate = false; });
+// Vertical: prevent looking from too high or too low
+controls.minPolarAngle = Math.PI / 3.2;   // can't look straight down
+controls.maxPolarAngle = Math.PI / 2.15;  // can't dip below desk level
+
+// Horizontal: lock to a small arc around the front-3/4 view
+// Resting position is azimuth = PI/4 (45°). Allow ~25° each direction.
+controls.minAzimuthAngle = Math.PI / 4 - Math.PI / 7;
+controls.maxAzimuthAngle = Math.PI / 4 + Math.PI / 7;
+
+controls.autoRotate = false;
+controls.target.set(0, 1.4, 0);
+
+// -------- Intro animation state --------
+const restingCam = new THREE.Vector3(5.0, 4.0, 5.0);   // where camera ends up
+const introStartCam = new THREE.Vector3(9, 9, 9);       // where camera flies in from
+let introDone = false;
+const introStartTime = performance.now();
+
+// Snap camera to intro start before first render
+camera.position.copy(introStartCam);
+
+// Disable user controls until intro finishes
+controls.enabled = false;
 
 // -------- Theme state --------
 const THEMES = {
@@ -55,27 +71,26 @@ const THEMES = {
     screenEmissive: 0.2,
   },
   night: {
-  bg: 0x1c1b22,
-  ambient: 0x7a6f65,
-  ambientIntensity: 0.45,
-
-  sun: 0x8f7c68,
-  sunIntensity: 0.35,
-
-  lamp: 0xffb35c,
-  lampIntensity: 1.65,
-
-  fogColor: 0x1c1b22,
-  fogNear: 13,
-  fogFar: 32,
-
-  screen: 0x7ccfff,
-  screenEmissive: 0.55,
+    bg: 0x1c1b22,
+    ambient: 0x7a6f65,
+    ambientIntensity: 0.45,
+    sun: 0x8f7c68,
+    sunIntensity: 0.35,
+    lamp: 0xffb35c,
+    lampIntensity: 1.65,
+    fogColor: 0x1c1b22,
+    fogNear: 13, fogFar: 32,
+    screen: 0x7ccfff,
+    screenEmissive: 0.55,
   },
 };
 
 let currentTheme = localStorage.getItem('theme') || 'day';
-scene.fog = new THREE.Fog(THEMES[currentTheme].fogColor, THEMES[currentTheme].fogNear, THEMES[currentTheme].fogFar);
+scene.fog = new THREE.Fog(
+  THEMES[currentTheme].fogColor,
+  THEMES[currentTheme].fogNear,
+  THEMES[currentTheme].fogFar
+);
 
 // -------- Lighting --------
 const ambient = new THREE.AmbientLight(0xffffff, 1);
@@ -94,7 +109,6 @@ sun.shadow.camera.far = 20;
 sun.shadow.bias = -0.0005;
 scene.add(sun);
 
-// Warm lamp light — this is the "cozy" night-mode glow
 const lamp = new THREE.PointLight(0xffa747, 0, 8, 1.6);
 lamp.position.set(-1.3, 2.3, 0.4);
 lamp.castShadow = true;
@@ -146,14 +160,12 @@ const desk = new THREE.Group();
 desk.position.set(0, 0, -1);
 scene.add(desk);
 
-// Desktop (top surface)
 const top = new THREE.Mesh(new THREE.BoxGeometry(4.5, 0.1, 2.2), mat.wood);
 top.position.y = 1.5;
 top.castShadow = true;
 top.receiveShadow = true;
 desk.add(top);
 
-// Desk legs
 for (const [x, z] of [[-2.1, -0.95], [2.1, -0.95], [-2.1, 0.95], [2.1, 0.95]]) {
   const leg = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.5, 0.12), mat.darkWood);
   leg.position.set(x, 0.75, z);
@@ -162,9 +174,9 @@ for (const [x, z] of [[-2.1, -0.95], [2.1, -0.95], [-2.1, 0.95], [2.1, 0.95]]) {
 }
 
 // -------- Clickable objects --------
-// Each gets a userData.target so click → navigate
 const clickables = [];
 
+// -------- Helper: text-on-canvas texture (for the about card / notebook label) --------
 function makeTextTexture({
   title = '',
   subtitle = '',
@@ -177,29 +189,24 @@ function makeTextTexture({
   accent = '#c2571a',
   border = '#d7c7ae'
 } = {}) {
-  
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext('2d');
 
-  // background
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, width, height);
 
-  // border
   ctx.strokeStyle = border;
   ctx.lineWidth = 10;
   ctx.strokeRect(12, 12, width - 24, height - 24);
 
-  // title
   ctx.fillStyle = fg;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.font = `bold ${titleSize}px Georgia`;
   ctx.fillText(title, width / 2, height / 2 - 20);
 
-  // subtitle
   if (subtitle) {
     ctx.fillStyle = accent;
     ctx.font = `${subtitleSize}px Arial`;
@@ -213,10 +220,7 @@ function makeTextTexture({
 
 /* --- LAPTOP → projects --- */
 const laptop = new THREE.Group();
-
-// Desk surface is y = 1.55, so lift the laptop slightly above it
 laptop.position.set(0.7, 1.59, -0.2);
-
 laptop.rotation.y = -0.3;
 desk.add(laptop);
 
@@ -226,7 +230,7 @@ laptop.add(laptopBase);
 
 const laptopScreen = new THREE.Group();
 laptopScreen.position.set(0, 0.02, -0.42);
-laptopScreen.rotation.x = -0.5; // open tilt
+laptopScreen.rotation.x = -0.5;
 laptop.add(laptopScreen);
 
 const screenBack = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.75, 0.03), mat.metal);
@@ -284,7 +288,6 @@ const aboutCard = new THREE.Group();
 aboutCard.position.set(-1.95, 1.56, -0.68);
 desk.add(aboutCard);
 
-// base
 const aboutBase = new THREE.Mesh(
   new THREE.BoxGeometry(0.58, 0.05, 0.18),
   mat.darkWood
@@ -292,7 +295,6 @@ const aboutBase = new THREE.Mesh(
 aboutBase.castShadow = true;
 aboutCard.add(aboutBase);
 
-// support
 const aboutSupport = new THREE.Mesh(
   new THREE.BoxGeometry(0.06, 0.26, 0.08),
   mat.darkWood
@@ -301,7 +303,6 @@ aboutSupport.position.set(0, 0.13, -0.03);
 aboutSupport.castShadow = true;
 aboutCard.add(aboutSupport);
 
-// card
 const aboutTex = makeTextTexture({
   title: 'About',
   subtitle: 'click to enter',
@@ -323,7 +324,6 @@ aboutFace.position.set(0, 0.5, 0.045);
 aboutFace.rotation.x = -0.08;
 aboutCard.add(aboutFace);
 
-// small back panel so it feels solid
 const aboutBack = new THREE.Mesh(
   new THREE.BoxGeometry(0.52, 0.7, 0.04),
   mat.paper
@@ -340,7 +340,6 @@ const mug = new THREE.Group();
 mug.position.set(1.72, 1.56, 0.45);
 desk.add(mug);
 
-// saucer
 const saucer = new THREE.Mesh(
   new THREE.CylinderGeometry(0.25, 0.27, 0.025, 32),
   mat.ceramic
@@ -349,7 +348,6 @@ saucer.position.y = 0.012;
 saucer.receiveShadow = true;
 mug.add(saucer);
 
-// cup body
 const mugBody = new THREE.Mesh(
   new THREE.CylinderGeometry(0.16, 0.13, 0.26, 32, 1, false),
   mat.ceramic
@@ -358,7 +356,6 @@ mugBody.position.y = 0.15;
 mugBody.castShadow = true;
 mug.add(mugBody);
 
-// coffee surface
 const coffee = new THREE.Mesh(
   new THREE.CylinderGeometry(0.125, 0.125, 0.015, 24),
   new THREE.MeshStandardMaterial({ color: 0x4a2b1a, roughness: 0.25 })
@@ -366,8 +363,7 @@ const coffee = new THREE.Mesh(
 coffee.position.y = 0.275;
 mug.add(coffee);
 
-
-// steam
+// Steam
 const steamMat = new THREE.MeshStandardMaterial({
   color: 0xffffff,
   transparent: true,
@@ -382,14 +378,12 @@ function makeSteam(xOffset) {
     new THREE.Vector3(xOffset - 0.01, 0.52, -0.005),
     new THREE.Vector3(xOffset + 0.01, 0.64, 0.01)
   ]);
-
   const steam = new THREE.Mesh(
     new THREE.TubeGeometry(curve, 20, 0.010, 8, false),
     steamMat
   );
   mug.add(steam);
 }
-
 makeSteam(-0.025);
 makeSteam(0);
 makeSteam(0.025);
@@ -402,7 +396,6 @@ const deskLamp = new THREE.Group();
 deskLamp.position.set(-1.2, 1.55, -0.65);
 desk.add(deskLamp);
 
-// Wooden base
 const lampBase = new THREE.Mesh(
   new THREE.BoxGeometry(0.42, 0.05, 0.42),
   mat.darkWood
@@ -411,7 +404,6 @@ lampBase.castShadow = true;
 lampBase.receiveShadow = true;
 deskLamp.add(lampBase);
 
-// 4 vertical wooden posts
 const postGeo = new THREE.BoxGeometry(0.035, 0.6, 0.035);
 const postOffsets = [
   [-0.15, 0.325, -0.15],
@@ -419,7 +411,6 @@ const postOffsets = [
   [-0.15, 0.325,  0.15],
   [ 0.15, 0.325,  0.15]
 ];
-
 postOffsets.forEach(([x, y, z]) => {
   const post = new THREE.Mesh(postGeo, mat.darkWood);
   post.position.set(x, y, z);
@@ -427,7 +418,6 @@ postOffsets.forEach(([x, y, z]) => {
   deskLamp.add(post);
 });
 
-// Top wooden cap
 const lampTop = new THREE.Mesh(
   new THREE.BoxGeometry(0.42, 0.05, 0.42),
   mat.darkWood
@@ -436,7 +426,6 @@ lampTop.position.y = 0.65;
 lampTop.castShadow = true;
 deskLamp.add(lampTop);
 
-// Paper shade material
 const paperMat = new THREE.MeshStandardMaterial({
   color: 0xf5e6c8,
   roughness: 0.95,
@@ -446,7 +435,6 @@ const paperMat = new THREE.MeshStandardMaterial({
   emissiveIntensity: 0
 });
 
-// Paper box
 const paperBox = new THREE.Mesh(
   new THREE.BoxGeometry(0.32, 0.5, 0.32),
   paperMat
@@ -455,10 +443,9 @@ paperBox.position.y = 0.35;
 paperBox.castShadow = true;
 deskLamp.add(paperBox);
 
-// Optional horizontal wood slats for a shoji look
+// Shoji slats
 const slatGeoX = new THREE.BoxGeometry(0.34, 0.015, 0.015);
 const slatGeoZ = new THREE.BoxGeometry(0.015, 0.015, 0.34);
-
 [0.2, 0.35, 0.5].forEach((y) => {
   const slatFront = new THREE.Mesh(slatGeoX, mat.darkWood);
   slatFront.position.set(0, y, 0.161);
@@ -477,7 +464,6 @@ const slatGeoZ = new THREE.BoxGeometry(0.015, 0.015, 0.34);
   deskLamp.add(slatRight);
 });
 
-// Inner bulb
 const bulb = new THREE.Mesh(
   new THREE.SphereGeometry(0.08, 16, 16),
   new THREE.MeshStandardMaterial({
@@ -489,7 +475,6 @@ const bulb = new THREE.Mesh(
 bulb.position.y = 0.35;
 deskLamp.add(bulb);
 
-// Larger invisible click area so users can easily toggle night mode
 const lampHitbox = new THREE.Mesh(
   new THREE.BoxGeometry(0.42, 0.75, 0.42),
   new THREE.MeshBasicMaterial({
@@ -498,14 +483,8 @@ const lampHitbox = new THREE.Mesh(
     depthWrite: false
   })
 );
-
 lampHitbox.position.set(0, 0.36, 0);
 deskLamp.add(lampHitbox);
-
-// Move actual point light to center of lamp
-const lightWorldPos = new THREE.Vector3(0, 0.35, 0);
-deskLamp.localToWorld(lightWorldPos);
-lamp.position.copy(lightWorldPos);
 
 deskLamp.userData = { target: '__toggle__', label: 'Night mode' };
 clickables.push(deskLamp);
@@ -523,7 +502,6 @@ pot.position.y = 0.15;
 pot.castShadow = true;
 plant.add(pot);
 
-// Several leaves arranged around
 for (let i = 0; i < 7; i++) {
   const leaf = new THREE.Mesh(
     new THREE.SphereGeometry(0.14, 12, 8),
@@ -542,6 +520,55 @@ for (let i = 0; i < 7; i++) {
   plant.add(leaf);
 }
 
+// -------- Pop-in setup for intro animation --------
+// Every clickable + the desk + the plant pop in. Floor and walls stay static
+// (popping the floor would be too jarring).
+const popInObjects = [...clickables, plant];
+
+const introTargets = popInObjects.map((obj, i) => {
+  const original = obj.scale.clone();
+  obj.scale.set(0.001, 0.001, 0.001);  // start invisible
+  return { obj, original, delay: 0.6 + i * 0.18 };  // stagger 180ms each
+});
+
+// Constants for intro timing
+const CAM_DURATION = 1800;  // ms — camera fly-in length
+const POP_DURATION = 600;   // ms — each object's pop-in length
+
+// Easing functions
+function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+function easeOutBack(t) {
+  const c1 = 1.70158;
+  const c3 = c1 + 1;
+  return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+}
+
+// Updates intro every frame — called from animate()
+function updateIntro() {
+  const elapsed = performance.now() - introStartTime;
+
+  // 1. Camera fly-in
+  if (elapsed < CAM_DURATION) {
+    const t = easeOutCubic(elapsed / CAM_DURATION);
+    camera.position.lerpVectors(introStartCam, restingCam, t);
+  } else if (!introDone) {
+    camera.position.copy(restingCam);
+    controls.enabled = true;
+    introDone = true;
+  }
+
+  // 2. Object pop-ins (run in parallel with camera)
+  introTargets.forEach(({ obj, original, delay }) => {
+    const objElapsed = elapsed - delay * 1000;
+    if (objElapsed < 0) return;
+    if (objElapsed >= POP_DURATION) {
+      obj.scale.copy(original);
+      return;
+    }
+    const t = easeOutBack(objElapsed / POP_DURATION);
+    obj.scale.set(original.x * t, original.y * t, original.z * t);
+  });
+}
 
 // -------- Raycasting for hover & click --------
 const raycaster = new THREE.Raycaster();
@@ -550,37 +577,40 @@ const tooltip = document.getElementById('scene-tooltip');
 let hovered = null;
 
 function onPointerMove(e) {
+  // Use canvas bounding rect (works correctly when canvas is half-screen on mobile)
   const rect = canvas.getBoundingClientRect();
   pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
   pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
   raycaster.setFromCamera(pointer, camera);
   const intersects = raycaster.intersectObjects(clickables, true);
 
   if (intersects.length > 0) {
-    // Find the root clickable group
     let obj = intersects[0].object;
     while (obj.parent && !obj.userData.target) obj = obj.parent;
     if (obj.userData.target) {
       hovered = obj;
       canvas.style.cursor = 'pointer';
-      tooltip.textContent = obj.userData.label;
-      tooltip.style.left = e.clientX + 'px';
-      tooltip.style.top = e.clientY + 'px';
-      tooltip.classList.add('visible');
+      if (tooltip) {
+        tooltip.textContent = obj.userData.label;
+        tooltip.style.left = e.clientX + 'px';
+        tooltip.style.top = e.clientY + 'px';
+        tooltip.classList.add('visible');
+      }
       return;
     }
   }
   hovered = null;
   canvas.style.cursor = 'grab';
-  tooltip.classList.remove('visible');
+  if (tooltip) tooltip.classList.remove('visible');
 }
 
 function onClick() {
+  if (!introDone) return;  // ignore clicks during intro
   if (hovered && hovered.userData.target) {
     if (hovered.userData.target === '__toggle__') {
       toggleTheme();
     } else {
-      // Quick fade before navigating
       document.body.style.transition = 'opacity 0.4s';
       document.body.style.opacity = '0';
       setTimeout(() => { window.location.href = hovered.userData.target; }, 350);
@@ -630,13 +660,11 @@ function applyTheme(theme, instant = false) {
     bulb.material.emissiveIntensity = fromBulbEm + (t.lampIntensity * 0.6 - fromBulbEm) * ease;
     paperBox.material.emissiveIntensity = fromPaperEm + ((t.lampIntensity > 0 ? 0.22 : 0) - fromPaperEm) * ease;
     mat.screenOn.emissiveIntensity = fromScreenEm + (t.screenEmissive - fromScreenEm) * ease;
-    
 
     if (p < 1) requestAnimationFrame(step);
   }
   requestAnimationFrame(step);
 
-  // Sync page theme
   document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem('theme', theme);
   currentTheme = theme;
@@ -645,7 +673,7 @@ function applyTheme(theme, instant = false) {
 function toggleTheme() {
   applyTheme(currentTheme === 'day' ? 'night' : 'day');
 }
-window.toggleTheme = toggleTheme; // expose for the button
+window.toggleTheme = toggleTheme;
 
 // Apply initial theme instantly
 scene.background = new THREE.Color(THEMES[currentTheme].bg);
@@ -674,13 +702,18 @@ function applyResponsiveCamera() {
   const v = getViewport();
 
   if (v.mobile) {
-    camera.fov = 42;
-    camera.position.set(5.2, 4.2, 6);
-    controls.target.set(0, 1.4, 0);
+    camera.fov = 48;
+    restingCam.set(4.6, 3.6, 4.6);
+    controls.target.set(0, 1.5, 0);
   } else {
-    camera.fov = 35;
-    camera.position.set(6, 5, 7);
-    controls.target.set(0, 1.2, 0);
+    camera.fov = 40;
+    restingCam.set(5.0, 4.0, 5.0);
+    controls.target.set(0, 1.4, 0);
+  }
+
+  // Only snap to resting if intro is finished (otherwise let it animate)
+  if (introDone) {
+    camera.position.copy(restingCam);
   }
 
   camera.aspect = v.width / v.height;
@@ -698,8 +731,9 @@ applyResponsiveCamera();
 function animate() {
   requestAnimationFrame(animate);
   controls.update();
+  updateIntro();
 
-  // Subtle lamp bulb position sync (in case arm rotates)
+  // Lamp bulb position sync
   const pos = new THREE.Vector3();
   bulb.getWorldPosition(pos);
   lamp.position.copy(pos);
