@@ -16,7 +16,7 @@
   --ink: #0f0f0f;           /* true sumi black */
   --ink-soft: #2a2620;
   --ink-mute: #7a6f5a;
-  --accent: #c8332b;        /* vermilion (hanko red) */
+  --accent: 		#2b201e;        /* vermilion (hanko red) */
   --accent-soft: #e6766a;
   --line: #c4b89a;
   --shadow: 0 30px 60px -30px rgba(15, 15, 15, 0.18);
