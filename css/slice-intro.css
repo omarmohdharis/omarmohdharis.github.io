@@ -1,0 +1,256 @@
+/* ============================================================
+   SLICE INTRO — append to css/champloo.css (or its own file)
+   Vinyl loader · Two katana slashes (X pattern) · 4 pieces fall
+   ============================================================ */
+
+/* -----------------------------------------------------------
+   Overlay container — covers everything during intro
+   ----------------------------------------------------------- */
+
+.intro-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: #0a0808;          /* deep ink-black, not pure black */
+  overflow: hidden;
+  pointer-events: all;          /* block interaction during intro */
+}
+
+/* When the intro is over, JS adds .done — overlay fades and is
+   removed from layout. */
+.intro-overlay.done {
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+/* Hidden from start until intro begins (so layout doesn't flash) */
+.intro-overlay.staged {
+  visibility: hidden;
+}
+
+/* -----------------------------------------------------------
+   Vinyl record — SVG-styled with CSS for spin
+   ----------------------------------------------------------- */
+
+.intro-vinyl {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 320px;
+  height: 320px;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  animation: vinyl-fade-in 0.6s ease forwards,
+             vinyl-spin 1.4s linear 0.3s infinite;
+}
+
+/* Hide vinyl when slashes start */
+.intro-overlay.slicing .intro-vinyl {
+  animation: vinyl-fade-out 0.2s ease forwards;
+}
+
+@keyframes vinyl-fade-in {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.85); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+@keyframes vinyl-fade-out {
+  to { opacity: 0; }
+}
+
+@keyframes vinyl-spin {
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* The vinyl spin overrides translate. Re-center via wrapper. */
+.intro-vinyl-wrapper {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 320px;
+  height: 320px;
+  margin-top: -160px;
+  margin-left: -160px;
+}
+
+.intro-vinyl-wrapper svg {
+  width: 100%;
+  height: 100%;
+  animation: vinyl-spin-clean 1.4s linear infinite;
+  transform-origin: center;
+  opacity: 0;
+  animation: vinyl-fade-in-clean 0.5s ease 0.1s forwards,
+             vinyl-spin-clean 1.4s linear 0.6s infinite;
+}
+
+@keyframes vinyl-fade-in-clean {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes vinyl-spin-clean {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.intro-overlay.slicing .intro-vinyl-wrapper {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+/* -----------------------------------------------------------
+   Loading caption below vinyl
+   ----------------------------------------------------------- */
+
+.intro-caption {
+  position: absolute;
+  top: calc(50% + 200px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: #c8332b;
+  opacity: 0;
+  animation: caption-fade 0.6s ease 0.4s forwards;
+}
+
+@keyframes caption-fade {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to   { opacity: 0.8; transform: translate(-50%, 0); }
+}
+
+.intro-overlay.slicing .intro-caption {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+/* -----------------------------------------------------------
+   Slash flashes — thin vermilion bars that scale across diagonals
+   ----------------------------------------------------------- */
+
+.intro-slash {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 4px;
+  background: #c8332b;
+  box-shadow:
+    0 0 24px rgba(200, 51, 43, 0.9),
+    0 0 60px rgba(200, 51, 43, 0.5);
+  transform-origin: center center;
+  pointer-events: none;
+}
+
+/* Slash 1 — top-left to bottom-right (45deg) */
+.intro-slash.slash-1 {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+/* Slash 2 — top-right to bottom-left (-45deg) */
+.intro-slash.slash-2 {
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+/* Animation: scale across full diagonal then disappear */
+.intro-overlay.slicing .intro-slash.slash-1 {
+  animation: slash-cut 0.32s cubic-bezier(0.85, 0, 0.15, 1) forwards;
+}
+.intro-overlay.slicing .intro-slash.slash-2 {
+  animation: slash-cut 0.32s cubic-bezier(0.85, 0, 0.15, 1) 0.18s forwards;
+}
+
+@keyframes slash-cut {
+  0%   { width: 0;     opacity: 0; }
+  20%  {                opacity: 1; }
+  60%  { width: 240vmax; opacity: 1; }
+  100% { width: 240vmax; opacity: 0; }
+}
+
+/* -----------------------------------------------------------
+   The four falling pieces
+   After the X is cut, the screen "shatters" into 4 triangles
+   that tumble away revealing the page beneath.
+   ----------------------------------------------------------- */
+
+.intro-piece {
+  position: absolute;
+  inset: 0;
+  background: #0a0808;
+  /* Each piece uses clip-path to show only its triangle of the screen */
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+/* Top triangle — between the two slashes at top */
+.intro-piece.piece-top {
+  clip-path: polygon(0% 0%, 100% 0%, 50% 50%);
+}
+
+/* Right triangle */
+.intro-piece.piece-right {
+  clip-path: polygon(100% 0%, 100% 100%, 50% 50%);
+}
+
+/* Bottom triangle */
+.intro-piece.piece-bottom {
+  clip-path: polygon(0% 100%, 100% 100%, 50% 50%);
+}
+
+/* Left triangle */
+.intro-piece.piece-left {
+  clip-path: polygon(0% 0%, 0% 100%, 50% 50%);
+}
+
+/* When the .falling class is added (after slashes complete),
+   each piece tumbles in its own direction with rotation. */
+.intro-overlay.falling .intro-piece.piece-top {
+  animation: fall-up 0.9s cubic-bezier(0.5, 0, 0.6, 1) forwards;
+}
+.intro-overlay.falling .intro-piece.piece-right {
+  animation: fall-right 0.9s cubic-bezier(0.5, 0, 0.6, 1) forwards;
+}
+.intro-overlay.falling .intro-piece.piece-bottom {
+  animation: fall-down 0.9s cubic-bezier(0.5, 0, 0.6, 1) forwards;
+}
+.intro-overlay.falling .intro-piece.piece-left {
+  animation: fall-left 0.9s cubic-bezier(0.5, 0, 0.6, 1) forwards;
+}
+
+/* Each piece falls in a different direction, rotating slightly */
+@keyframes fall-up {
+  from { transform: translate3d(0, 0, 0)        rotate(0deg);    opacity: 1; }
+  to   { transform: translate3d(0, -110vh, 0)  rotate(-12deg);  opacity: 0; }
+}
+@keyframes fall-right {
+  from { transform: translate3d(0, 0, 0)         rotate(0deg);   opacity: 1; }
+  to   { transform: translate3d(110vw, 30vh, 0) rotate(18deg);  opacity: 0; }
+}
+@keyframes fall-down {
+  from { transform: translate3d(0, 0, 0)        rotate(0deg);    opacity: 1; }
+  to   { transform: translate3d(0, 110vh, 0)   rotate(8deg);    opacity: 0; }
+}
+@keyframes fall-left {
+  from { transform: translate3d(0, 0, 0)          rotate(0deg);   opacity: 1; }
+  to   { transform: translate3d(-110vw, 30vh, 0) rotate(-18deg); opacity: 0; }
+}
+
+/* -----------------------------------------------------------
+   Reduced motion — skip the whole spectacle
+   ----------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .intro-overlay {
+    background: transparent;
+    pointer-events: none;
+  }
+  .intro-vinyl-wrapper,
+  .intro-caption,
+  .intro-slash,
+  .intro-piece {
+    display: none;
+  }
+}

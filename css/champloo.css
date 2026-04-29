@@ -1,0 +1,368 @@
+/* ============================================================
+   CHAMPLOO LAYER — drop in AT THE END of css/style.css
+   Layer 1 (foundation) + Layer 3 (motion)
+   ============================================================ */
+
+/* -----------------------------------------------------------
+   1. THEME TOKEN OVERRIDES
+   These rewrite the CSS custom properties from your base theme.
+   Day = washi paper · Night = ink-black with vermilion lamp glow.
+   ----------------------------------------------------------- */
+
+:root,
+[data-theme="day"] {
+  --bg: #e8dfc8;            /* washi cream — warmer + more aged than before */
+  --bg-raised: #f0e8d2;
+  --ink: #0f0f0f;           /* true sumi black */
+  --ink-soft: #2a2620;
+  --ink-mute: #7a6f5a;
+  --accent: #c8332b;        /* vermilion (hanko red) */
+  --accent-soft: #e6766a;
+  --line: #c4b89a;
+  --shadow: 0 30px 60px -30px rgba(15, 15, 15, 0.18);
+  --grain-opacity: 0.07;
+}
+
+[data-theme="night"] {
+  --bg: #14110d;            /* deep ink-black with brown undertone */
+  --bg-raised: #1d1916;
+  --ink: #ede4d3;
+  --ink-soft: #b8ae9c;
+  --ink-mute: #6a5f4f;
+  --accent: #d94a3f;        /* vermilion stays vivid in dark */
+  --accent-soft: #a83a30;
+  --line: #2c2620;
+  --shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.7);
+  --grain-opacity: 0.11;
+}
+
+/* -----------------------------------------------------------
+   2. WASHI PAPER TEXTURE
+   Replaces the smooth grain with stronger paper-fiber feel.
+   ----------------------------------------------------------- */
+
+body::before {
+  /* Override the noise texture with a more fibrous one */
+  background-image:
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='paper'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' seed='3'/%3E%3CfeColorMatrix values='0 0 0 0 0.2 0 0 0 0 0.15 0 0 0 0 0.1 0 0 0 0.6 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23paper)'/%3E%3C/svg%3E");
+  mix-blend-mode: multiply;  /* multiply makes the fiber feel woven into the page */
+}
+
+/* Add a faint horizontal "deckle edge" feeling at top/bottom of body */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9998;
+  background:
+    radial-gradient(ellipse 80% 6% at 50% 0%, rgba(0,0,0,0.06), transparent 70%),
+    radial-gradient(ellipse 80% 6% at 50% 100%, rgba(0,0,0,0.06), transparent 70%);
+}
+
+/* -----------------------------------------------------------
+   3. HANKO STAMP — the little red square stamp graphic
+   Used next to section eyebrows ("01 — About", "02 — Toolkit", etc.)
+   ----------------------------------------------------------- */
+
+.eyebrow,
+.skills .eyebrow,
+[class*="eyebrow"] {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 0.6rem;
+  position: relative;
+}
+
+/* The stamp itself — pseudo-element, no HTML changes needed */
+.eyebrow::before,
+.skills .eyebrow::before,
+[class*="eyebrow"]::before {
+  content: "印";  /* "stamp" / "seal" — purely decorative graphic, not text content */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: 'Fraunces', serif;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border-radius: 2px;
+  /* Slightly rotated + textured to feel hand-stamped, not printed */
+  transform: rotate(-4deg);
+  box-shadow:
+    inset 0 0 0 1px rgba(0,0,0,0.15),
+    0 1px 0 rgba(0,0,0,0.1);
+  /* Subtle ink-bleed effect on the edges */
+  filter: contrast(1.1) saturate(1.1);
+}
+
+/* If you'd rather use a Roman character instead of "印":
+   change content to "○" or your initials "OH" or just leave blank ""
+   The look works either way. */
+
+/* -----------------------------------------------------------
+   4. HERO TYPOGRAPHY — brushed underline on italic accent word
+   ----------------------------------------------------------- */
+
+.hero-title em {
+  position: relative;
+  color: var(--ink);  /* italic word stays ink-black, not red */
+  font-style: italic;
+  z-index: 1;
+}
+
+/* Hand-brushed red underline behind the italic word.
+   SVG path = irregular ink stroke shape with brush taper. */
+.hero-title em::after {
+  content: "";
+  position: absolute;
+  left: -3%;
+  right: -3%;
+  bottom: 5%;
+  height: 0.45em;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 30' preserveAspectRatio='none'%3E%3Cpath d='M2,18 Q40,8 80,14 T160,12 Q180,10 198,16 Q190,22 150,20 T70,22 Q30,24 5,20 Z' fill='%23c8332b' opacity='0.85'/%3E%3C/svg%3E");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  z-index: -1;
+  /* Will animate in via Layer 3 */
+  transform-origin: left center;
+}
+
+/* If user has the home class, animate the brush stroke drawing in */
+body.is-home .hero-title em::after {
+  animation: brush-stroke-in 1.1s cubic-bezier(0.65, 0, 0.35, 1) 0.8s both;
+}
+@keyframes brush-stroke-in {
+  from { transform: scaleX(0); opacity: 0; }
+  60%  { opacity: 1; }
+  to   { transform: scaleX(1); opacity: 0.85; }
+}
+
+/* -----------------------------------------------------------
+   5. ACCENT TYPOGRAPHY ADJUSTMENTS
+   ----------------------------------------------------------- */
+
+/* Section dividers — replace the soft line with a tapered ink rule */
+.page-header,
+.skills,
+.resume-section > h2 {
+  border-image: linear-gradient(
+    to right,
+    var(--ink) 0%,
+    var(--ink) 60%,
+    transparent 100%
+  ) 1;
+}
+
+/* Resume bullets — the "—" becomes vermilion */
+.resume-item .what li::before {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* Project number ("01", "02") — bigger and more confident */
+.project .num {
+  font-size: 1rem !important;
+  color: var(--accent) !important;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+/* Tags — squarer, more "stamped" */
+.project .tag {
+  border-radius: 0 !important;
+  border-color: var(--ink) !important;
+  background: transparent;
+  font-weight: 500;
+}
+.project .tag:hover {
+  background: var(--ink);
+  color: var(--bg);
+}
+
+/* Buttons — squarer, no gradient softness */
+.btn {
+  border-radius: 0;
+  border-width: 1.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-weight: 500;
+}
+
+/* =============================================================
+   LAYER 3 — MOTION
+   ============================================================= */
+
+/* -----------------------------------------------------------
+   6. VINYL-SCRATCH PAGE TRANSITION (out)
+   When user clicks a link, body briefly stutters before navigating.
+   The stutter is added via JS by toggling .scratching class.
+   ----------------------------------------------------------- */
+
+body.scratching {
+  animation: vinyl-scratch 0.32s steps(4, end) forwards;
+}
+@keyframes vinyl-scratch {
+  0%   { transform: translateX(0)    skewX(0deg);  filter: none; }
+  20%  { transform: translateX(-3px) skewX(0.4deg); filter: contrast(1.3) saturate(1.4); }
+  40%  { transform: translateX(2px)  skewX(-0.4deg);}
+  60%  { transform: translateX(-1px) skewX(0.2deg); filter: contrast(0.8) brightness(0.95); }
+  80%  { transform: translateX(0)    skewX(0deg); }
+  100% { opacity: 0; }
+}
+
+/* Page-in transition — quick 2-frame flash, not a smooth fade */
+body.fading-in {
+  animation: vinyl-cut-in 0.4s steps(3, end) both;
+}
+@keyframes vinyl-cut-in {
+  0%   { opacity: 0; transform: translateX(4px); filter: contrast(1.4); }
+  33%  { opacity: 1; transform: translateX(-2px); filter: contrast(1.1); }
+  66%  { opacity: 0.95; transform: translateX(0); }
+  100% { opacity: 1; transform: translateX(0); filter: none; }
+}
+
+/* -----------------------------------------------------------
+   7. HOVER FRAME-JUMPS — links and projects briefly skip
+   ----------------------------------------------------------- */
+
+/* Project items — tiny "skip" instead of smooth slide on hover */
+.project {
+  transition: transform 0.05s steps(2, end);
+}
+.project:hover {
+  padding-left: 1rem;
+  transform: translateX(2px);
+  transition-duration: 0.08s;
+}
+
+/* Nav links — flicker the underline on hover */
+.nav ul a {
+  transition: color 0.1s steps(2, end);
+}
+.nav ul a:hover {
+  animation: nav-flicker 0.18s steps(3, end);
+}
+@keyframes nav-flicker {
+  0%   { transform: translateY(0);    opacity: 1; }
+  33%  { transform: translateY(-1px); opacity: 0.7; }
+  66%  { transform: translateY(1px);  opacity: 1; }
+  100% { transform: translateY(0); }
+}
+
+/* Buttons — frame-cut on hover */
+.btn {
+  transition: background 0.08s steps(2, end), color 0.08s steps(2, end);
+}
+
+/* Contact links — bigger arrow jump */
+.contact-link {
+  transition: border-color 0.1s steps(2, end), color 0.1s steps(2, end);
+}
+.contact-link:hover .arrow {
+  animation: arrow-skip 0.25s steps(4, end);
+  transform: none;
+}
+@keyframes arrow-skip {
+  0%   { transform: translateX(0); }
+  25%  { transform: translateX(4px); }
+  50%  { transform: translateX(2px); }
+  75%  { transform: translateX(8px); }
+  100% { transform: translateX(8px); }
+}
+
+/* -----------------------------------------------------------
+   8. INK SPLATTER ON CLICK
+   The .ink-splat element is created by JS and fades out.
+   ----------------------------------------------------------- */
+
+.ink-splat {
+  position: fixed;
+  pointer-events: none;
+  width: 60px;
+  height: 60px;
+  z-index: 9000;
+  transform: translate(-50%, -50%) scale(0);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cg fill='%23c8332b'%3E%3Ccircle cx='50' cy='50' r='12'/%3E%3Ccircle cx='28' cy='38' r='4'/%3E%3Ccircle cx='72' cy='42' r='5'/%3E%3Ccircle cx='35' cy='65' r='3'/%3E%3Ccircle cx='68' cy='68' r='4'/%3E%3Ccircle cx='80' cy='58' r='2'/%3E%3Ccircle cx='20' cy='55' r='2.5'/%3E%3Ccircle cx='55' cy='25' r='3'/%3E%3Ccircle cx='42' cy='80' r='2'/%3E%3Cpath d='M50,30 Q58,40 50,50 Q42,40 50,30 Z'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  animation: splat 0.5s cubic-bezier(0.2, 0.8, 0.4, 1) forwards;
+  /* Random rotation per splat — set inline by JS */
+}
+@keyframes splat {
+  0%   { transform: translate(-50%, -50%) scale(0)   rotate(var(--r, 0deg)); opacity: 0; }
+  20%  { opacity: 0.85; }
+  100% { transform: translate(-50%, -50%) scale(1.2) rotate(var(--r, 0deg)); opacity: 0; }
+}
+
+/* -----------------------------------------------------------
+   9. CURSOR INK DOT — small lagging dot like a brush
+   Only on devices with a fine pointer (skips touch).
+   ----------------------------------------------------------- */
+
+@media (pointer: fine) {
+  .ink-cursor {
+    position: fixed;
+    pointer-events: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    z-index: 9999;
+    transform: translate(-50%, -50%);
+    transition: transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1),
+                width 0.15s, height 0.15s, opacity 0.2s;
+    mix-blend-mode: multiply;
+    opacity: 0.7;
+  }
+  .ink-cursor.hovering {
+    width: 18px;
+    height: 18px;
+    opacity: 0.9;
+  }
+  /* Hide native cursor on interactive elements when ink cursor is present */
+  body.has-ink-cursor a,
+  body.has-ink-cursor button {
+    cursor: none;
+  }
+}
+
+/* -----------------------------------------------------------
+   10. SUBTLE SCANLINE (very faint, for "old film" feel)
+   Off by default — uncomment to enable if you want extra grit
+   ----------------------------------------------------------- */
+
+/*
+body::before {
+  background-image:
+    repeating-linear-gradient(
+      to bottom,
+      rgba(0,0,0,0.025) 0px,
+      rgba(0,0,0,0.025) 1px,
+      transparent 1px,
+      transparent 3px
+    ),
+    [your existing paper texture URL];
+}
+*/
+
+/* -----------------------------------------------------------
+   11. ACCESSIBILITY — respect reduced motion
+   ----------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  body.scratching,
+  body.fading-in,
+  .ink-splat,
+  .nav ul a:hover,
+  .contact-link:hover .arrow,
+  .hero-title em::after {
+    animation: none !important;
+  }
+  .ink-cursor {
+    display: none;
+  }
+}
